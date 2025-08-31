@@ -1,0 +1,29 @@
+name: Deploy demo-backend
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build Docker Image
+        run: docker build -t jayadhav/demo-backend
+      - name: Publish Image to docker hub
+        run: docker push jayadhav/demo-backend:latest
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Pull image from docker hub
+        run: docker pull jayadhav/demo-backend:latest
+      - name: Delete old container
+        run: docker rm -f demo-backend-container
+      - name: Run Docker Container
+        run: docker run -d -p 3000:3000 --name demo-backend -e MONGO_PASSWORD='${{ secrets.MONGO_PASSWORD }}'jayadhav/demo-backend
